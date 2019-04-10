@@ -14,7 +14,7 @@ repositories {
 
 bintray {
     user = 'paralainer'
-    key = property('bintray.key')
+    key = ''
     dryRun = false
     publish = true
     publications = ['Bintray']
