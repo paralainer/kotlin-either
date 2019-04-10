@@ -6,9 +6,9 @@
 Simple Either implementation for Kotlin
 
 Supports basic set of operations:
-* *swap*
-* *fold*
-* *toOption* (uses built in Kotlin nullable types)
-* *map*
-* *mapLeft*
-* *flatMap*
+* **swap**
+* **fold**
+* **toOption** (uses built in Kotlin nullable types)
+* **map**
+* **mapLeft**
+* **flatMap**
