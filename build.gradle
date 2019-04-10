@@ -1,13 +1,93 @@
 plugins {
     id 'org.jetbrains.kotlin.jvm' version '1.3.21'
+    id 'com.jfrog.bintray' version '1.8.4'
+    id 'maven-publish'
 }
 
 group 'com.paralainer'
-version '0.1'
+version '0.1.2'
 
 repositories {
+    jcenter()
     mavenCentral()
 }
+
+bintray {
+    user = 'paralainer'
+    key = property('bintray.key')
+    dryRun = false
+    publish = true
+    publications = ['Bintray']
+    pkg {
+        repo = 'maven'
+        name = 'kotlin-either'
+        licenses = ['MIT']
+        vcsUrl = 'git@github.com:paralainer/kotlin-either.git'
+        websiteUrl = 'https://github.com/paralainer/kotlin-either'
+        issueTrackerUrl = 'https://github.com/paralainer/kotlin-either/issues'
+        labels = ['fp', 'kotlin', 'either']
+        version {
+            name = project.version
+            vcsTag = "release-${project.version}"
+        }
+    }
+}
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allJava
+    from sourceSets.main.kotlin
+}
+
+task javadocJar (type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+publishing {
+    publications {
+        Bintray(MavenPublication) {
+            from components.java
+            artifact sourceJar {
+                classifier 'sources'
+            }
+
+            artifact javadocJar {
+                classifier 'javadoc'
+            }
+
+            pom.withXml {
+                asNode().children().last() + {
+                    resolveStrategy = Closure.DELEGATE_FIRST
+
+                    name 'kotlin-either'
+                    description 'Simple Either implementation for Kotlin'
+                    url 'https://github.com/paralainer/kotlin-either'
+                    scm {
+                        url 'https://github.com/paralainer/kotlin-either.git'
+                        connection 'scm:git@github.com:paralainer/kotlin-either.git'
+                        developerConnection 'git@github.com:paralainer/kotlin-either.git'
+                        tag project.version
+                    }
+                    licenses {
+                        license {
+                            name 'MIT'
+                            url 'https://github.com/paralainer/kotlin-either/blob/master/LICENSE'
+                            distribution 'repo'
+                        }
+                    }
+                    developers {
+                        developer {
+                            id 'paralainer'
+                            name 'Sergey Talov'
+                            email 'serg.talov@gmail.com'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8"
