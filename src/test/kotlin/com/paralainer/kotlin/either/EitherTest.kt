@@ -150,8 +150,8 @@ internal class EitherTest {
         val value = "test"
         val anotherValue = "abc"
         val rightValue = right(value)
-        val anotherRightValue = right(anotherValue)
-        val mappedValue = rightValue.flatMap { v -> anotherRightValue.map { TestResult(it.value + v.value) } }
+        val anotherRightValue = Either.right<Exception, String>(anotherValue)
+        val mappedValue = rightValue.flatMap { v -> anotherRightValue.map { TestResult(it + v.value) } }
         assertTrue(mappedValue.isRight)
         assertEquals(
             (mappedValue as Either.Right<TestResult>).value.value,

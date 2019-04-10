@@ -60,18 +60,18 @@ sealed class Either<out A, out B> {
         is Right -> ifRight(this.value)
     }
 
-    fun <C> map(f: (B) -> C): Either<A, C> = when (this) {
+    inline fun <C> map(f: (B) -> C): Either<A, C> = when (this) {
         is Left -> this
-        is Right -> Right(f(this.value))
+        is Right -> right(f(this.value))
     }
 
-    fun <C> mapLeft(f: (A) -> C): Either<C, B> = when (this) {
-        is Left -> Left(f(this.value))
+    inline fun <C> mapLeft(f: (A) -> C): Either<C, B> = when (this) {
+        is Left -> left(f(this.value))
         is Right -> this
     }
 }
 
-fun <A, B, C> Either<A, B>.flatMap(f: (B) -> Either<A, C>): Either<A, C> = when (this) {
+inline fun <A, B, C> Either<A, B>.flatMap(f: (B) -> Either<A, C>): Either<A, C> = when (this) {
     is Either.Left ->  this
     is Either.Right -> f(this.value)
 }
