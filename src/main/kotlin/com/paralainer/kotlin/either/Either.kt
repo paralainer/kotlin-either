@@ -10,11 +10,42 @@ sealed class Either<out A, out B> {
     class Left<out A> internal constructor(val value: A) : Either<A, Nothing>() {
         override val isLeft: Boolean = true
         override val isRight: Boolean = false
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Left<*>
+
+            if (value != other.value) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return value?.hashCode() ?: 0
+        }
+
     }
 
     class Right<out B> internal constructor(val value: B) : Either<Nothing, B>() {
         override val isLeft: Boolean = false
         override val isRight: Boolean = true
+
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+
+            other as Left<*>
+
+            if (value != other.value) return false
+
+            return true
+        }
+
+        override fun hashCode(): Int {
+            return value?.hashCode() ?: 0
+        }
     }
 
     abstract val isLeft: Boolean
@@ -38,10 +69,9 @@ sealed class Either<out A, out B> {
         is Left -> Left(f(this.value))
         is Right -> this
     }
+}
 
-    @Suppress("UNCHECKED_CAST")
-    inline fun <C> flatMap(f: (B) -> Either<Any, C>): Either<A, C> = when (this) {
-        is Left -> this
-        is Right -> f(this.value) as Either<A, C>
-    }
+fun <A, B, C> Either<A, B>.flatMap(f: (B) -> Either<A, C>): Either<A, C> = when (this) {
+    is Either.Left ->  this
+    is Either.Right -> f(this.value)
 }

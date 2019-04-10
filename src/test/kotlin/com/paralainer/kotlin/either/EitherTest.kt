@@ -4,23 +4,27 @@ import org.junit.jupiter.api.Test
 
 import org.junit.jupiter.api.Assertions.*
 import java.lang.Exception
+import java.lang.RuntimeException
 
 internal class EitherTest {
-    private fun left(value: String): Either<String, String> = Either.left(value)
-    private fun right(value: String): Either<String, String> = Either.right(value)
+    data class TestError(val value: String)
+    data class TestResult(val value: String)
+
+    private fun left(value: String): Either<TestError, TestResult> = Either.left(TestError(value))
+    private fun right(value: String): Either<TestError, TestResult> = Either.right(TestResult(value))
 
     @Test
     fun `left produces Left instance`() {
         val value = "test"
         val leftValue = left(value)
-        assertEquals((leftValue as Either.Left<String>).value, value)
+        assertEquals((leftValue as Either.Left<TestError>).value.value, value)
     }
 
     @Test
     fun `right produces Right instance`() {
         val value = "test"
         val rightValue = right(value)
-        assertEquals((rightValue as Either.Right<String>).value, value)
+        assertEquals((rightValue as Either.Right<TestResult>).value.value, value)
     }
 
     @Test
@@ -30,7 +34,7 @@ internal class EitherTest {
         val swappedValue = leftValue.swap()
         assertTrue(swappedValue.isRight)
         assertEquals(
-            (swappedValue as Either.Right<String>).value,
+            (swappedValue as Either.Right<TestError>).value.value,
             value
         )
     }
@@ -42,7 +46,7 @@ internal class EitherTest {
         val swappedValue = rightValue.swap()
         assertTrue(swappedValue.isLeft)
         assertEquals(
-            (swappedValue as Either.Left<String>).value,
+            (swappedValue as Either.Left<TestResult>).value.value,
             value
         )
     }
@@ -52,7 +56,7 @@ internal class EitherTest {
         val value = "test"
         val rightValue = right(value)
         assertEquals(
-            rightValue.toOption(),
+            rightValue.toOption()?.value,
             value
         )
     }
@@ -69,7 +73,7 @@ internal class EitherTest {
         val value = "test"
         val leftValue = left(value)
         val result = leftValue.fold({
-            assertEquals(it, value)
+            assertEquals(it.value, value)
             value + "abc"
         }, {
             throw Exception("this should not be called")
@@ -85,7 +89,7 @@ internal class EitherTest {
         val result = rightValue.fold({
             throw Exception("this should not be called")
         }, {
-            assertEquals(it, value)
+            assertEquals(it.value, value)
             value + "abc"
         })
 
@@ -96,24 +100,23 @@ internal class EitherTest {
     fun `map should act on a Right value`() {
         val value = "test"
         val rightValue = right(value)
-        val mappedValue = rightValue.map{ it + "abc"}
+        val mappedValue = rightValue.map { it.copy(value = it.value + "abc") }
         assertTrue(mappedValue.isRight)
         assertEquals(
-            (mappedValue as Either.Right<String>).value,
+            (mappedValue as Either.Right<TestResult>).value.value,
             value + "abc"
         )
     }
-
 
 
     @Test
     fun `map should not act on a Left value`() {
         val value = "test"
         val leftValue = left(value)
-        val mappedValue = leftValue.map{ throw Exception("this should not be called") }
+        val mappedValue = leftValue.map { throw Exception("this should not be called") }
         assertTrue(mappedValue.isLeft)
         assertEquals(
-            (mappedValue as Either.Left<String>).value,
+            (mappedValue as Either.Left<TestError>).value.value,
             value
         )
     }
@@ -122,10 +125,10 @@ internal class EitherTest {
     fun `mapLeft should act on a Left value`() {
         val value = "test"
         val leftValue = left(value)
-        val mappedValue = leftValue.mapLeft{ it + "abc"}
+        val mappedValue = leftValue.mapLeft { TestError(it.value + "abc") }
         assertTrue(mappedValue.isLeft)
         assertEquals(
-            (mappedValue as Either.Left<String>).value,
+            (mappedValue as Either.Left<TestError>).value.value,
             value + "abc"
         )
     }
@@ -134,10 +137,10 @@ internal class EitherTest {
     fun `mapLeft should not act on a Right value`() {
         val value = "test"
         val rightValue = right(value)
-        val mappedValue = rightValue.mapLeft{ throw Exception("this should not be called") }
+        val mappedValue = rightValue.mapLeft { throw Exception("this should not be called") }
         assertTrue(mappedValue.isRight)
         assertEquals(
-            (mappedValue as Either.Right<String>).value,
+            (mappedValue as Either.Right<TestResult>).value.value,
             value
         )
     }
@@ -148,10 +151,10 @@ internal class EitherTest {
         val anotherValue = "abc"
         val rightValue = right(value)
         val anotherRightValue = right(anotherValue)
-        val mappedValue = rightValue.flatMap{ v -> anotherRightValue.map { it + v } }
+        val mappedValue = rightValue.flatMap { v -> anotherRightValue.map { TestResult(it.value + v.value) } }
         assertTrue(mappedValue.isRight)
         assertEquals(
-            (mappedValue as Either.Right<String>).value,
+            (mappedValue as Either.Right<TestResult>).value.value,
             anotherValue + value
         )
     }
@@ -161,11 +164,11 @@ internal class EitherTest {
         val value = "test"
         val errorValue = "error"
         val rightValue = right(value)
-        val errorLeftValue = left(errorValue)
-        val mappedValue = rightValue.flatMap{ v -> errorLeftValue.map { it + v } }
+        val errorLeftValue = Either.left<Exception, String>(RuntimeException(errorValue))
+        val mappedValue = rightValue.flatMap { errorLeftValue.mapLeft { TestError(it.message!!) } }
         assertTrue(mappedValue.isLeft)
         assertEquals(
-            (mappedValue as Either.Left<String>).value,
+            (mappedValue as Either.Left<TestError>).value.value,
             errorValue
         )
     }
@@ -174,10 +177,11 @@ internal class EitherTest {
     fun `flatMap should not act on Left`() {
         val value = "error"
         val leftValue = left(value)
-        val mappedValue = leftValue.flatMap<String>{ throw Exception("this should not be called") }
+        val mappedValue =
+            leftValue.flatMap<TestError, TestResult, TestResult> { throw Exception("this should not be called") }
         assertTrue(mappedValue.isLeft)
         assertEquals(
-            (mappedValue as Either.Left<String>).value,
+            (mappedValue as Either.Left<TestError>).value.value,
             value
         )
     }
@@ -190,10 +194,11 @@ internal class EitherTest {
         val rightValue = right(value1)
         val rightValue2 = right(value2)
         val rightValue3 = right(value3)
-        val mappedValue = rightValue.flatMap{ v -> rightValue2.map { v + it } }.flatMap { v -> rightValue3.map { v + it } }
+        val mappedValue = rightValue.flatMap { v -> rightValue2.map { TestResult(v.value + it.value) } }
+            .flatMap { v -> rightValue3.map { TestResult(v.value + it.value) } }
         assertTrue(mappedValue.isRight)
         assertEquals(
-            (mappedValue as Either.Right<String>).value,
+            (mappedValue as Either.Right<TestResult>).value.value,
             "abc"
         )
     }
